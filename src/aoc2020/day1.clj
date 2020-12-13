@@ -5,28 +5,44 @@
        clojure.string/split-lines
        (map #(Integer/parseInt %))))
 
-(defn vectorize [n]
+(defn my-array [n]
   (vec (make-array Integer n)))
 
-(defn get-sums [my-hash nums n]
-  (->> nums
-       (filter #(get my-hash(- n %)))))
-
+(defn valid-entries [entries xs y]
+  (filter #(get entries (- y %)) xs))
 
 (defn part-1 []
-  (let [n 2020
+  (let [y       2020
+        data    (read-data)
         my-hash (reduce #(assoc %1 %2 1)
-                         (vectorize n)
-                         data)]
-    (first (get-sums my-hash data n))))
+                        (my-array y)
+                        data)
+        n       (first (valid-entries my-hash data y))]
+
+    (* n (- y n))))
+
 
 (defn part-2 []
-  (let [data (read-data)
+  (let [data    (read-data)
         my-hash (reduce #(assoc %1 %2 1)
-                         (vectorize 2020)
-                         data)]
-    (->> (range (int (/ 2020 3)))
-         (filter #(get my-hash %))
-         (map #(get-sums my-hash data (- 2020 %)))
-         (remove empty?)
-         first)))
+                        (my-array 2020)
+                        data)
+        ns      (->> #_(range (int (/ 2020 3)))
+                     #_(filter #(get my-hash %))
+                     data
+                     (map #(valid-entries my-hash data (- 2020 %)))
+                     (remove empty?)
+                     first)]
+    (* (- 2020 (reduce + ns))
+       (reduce * ns))))
+
+;; O(n) solution for part 1.  Only iterates the input once (not
+;; including the initial `split-lines` in read-data)
+(defn part-1 []
+  (let [y 2020]
+    (loop [t       (my-array y)
+           [f & r] (read-data)]
+      (if (get t (- y f))
+        (* f (- y f))
+        (when (seq r)
+          (recur (assoc t f 1) r ))))))

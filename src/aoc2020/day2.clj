@@ -23,6 +23,7 @@
     (or (and a (not b))
         (and b (not a)))))
 
+
 (defn day2 []
   (->> (slurp "data/aoc2020_day2.txt")
        clojure.string/split-lines

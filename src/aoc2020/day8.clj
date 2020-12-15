@@ -10,18 +10,18 @@
 
 (defn part-1 []
   (let [instructions (read-data)]
-    (loop [n 0
+    (loop [line 0
            acc 0
            visited #{}]
-      (if (visited n)
+      (if (visited line)
         acc
-        (let [[i v] (instructions n)]
-          (cond (= "jmp" i)
-                (recur (+ v n) acc (conj visited n))
-                (= "acc" i)
-                (recur (inc n) (+ acc v) (conj visited n))
-                (= "nop" i)
-                (recur (inc n) acc (conj visited n))))))))
+        (let [[ins v] (instructions line)]
+          (cond (= "jmp" ins)
+                (recur (+ v line) acc (conj visited line))
+                (= "acc" ins)
+                (recur (inc line) (+ acc v) (conj visited line))
+                (= "nop" ins)
+                (recur (inc line) acc (conj visited line))))))))
 
 (defn terminates? [instructions n]
   (let [[i v]            (instructions n)

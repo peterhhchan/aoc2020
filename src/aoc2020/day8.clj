@@ -10,8 +10,8 @@
 
 (defn part-1 []
   (let [instructions (read-data)]
-    (loop [line 0
-           acc 0
+    (loop [line    0
+           acc     0
            visited #{}]
       (if (visited line)
         acc
@@ -47,6 +47,8 @@
 
 (defn part-2 []
   (let [instructions (read-data)
+        ;; We can probably brute-force `instructions` by changing some nop to jmp
+        ;; but we only really need to change one of the instructions from part 1
         to-test     (loop [n 0
                            acc 0
                            visited {}

@@ -4,7 +4,7 @@
   (->> (slurp "data/aoc2020_day3.txt")
        clojure.string/split-lines))
 
-(defn day3 []
+(defn part-1 []
   (let [d (read-data)
         w (count (first d))]
     (->> (range (count d))
@@ -17,7 +17,7 @@
          (filter #(= % \#))
          (count))))
 
-(defn day3-1 [right]
+(defn part-1 [right]
   (let [d       (read-data)
         w       (count (first d))
         indices (->> (range)
@@ -27,22 +27,20 @@
          count)))
 
 (defn ski [down right ]
-  (let [d       (read-data)
-        w       (count (first d))
-        indices (->> (range)
-                     (map (comp #(mod % w) (partial * right))))
-        rows    (->> (partition down d)
-                     (map first))]
-
-    (->> (map #(get %1 %2) rows indices)
+  (let [rows (read-data)
+        w    (count (first rows))
+        rows (->> (partition down rows)
+                  (map first))]
+    (->> (range)
+         (map (comp #(mod % w) #(* % right)))
+         (map #(get %1 %2) rows)
          (filter #(= % \#))
          count)))
 
+(defn part-1 []
+  (ski 1 3))
 
-(defn day3-2 []
-  (let [a (ski 1 1)
-        b (ski 1 3)
-        c (ski 1 5)
-        d (ski 1 7)
-        e (ski 2 1)]
-    (* a b c d e)))
+(defn part-2 []
+  (->>  [[1 1] [1 3] [1 5] [1 7] [2 1]]
+        (map (partial apply ski))
+        (reduce *)))

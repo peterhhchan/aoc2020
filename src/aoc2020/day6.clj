@@ -17,7 +17,6 @@
                  (disj \newline) keys count))
        (reduce +)))
 
-
 (defn part-2 []
   ;; This solution is cheating
   (->> (groups)

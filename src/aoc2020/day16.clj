@@ -1,26 +1,39 @@
-(ns aoc2020.day16)
+(ns aoc2020.day16
+  (:require [clojure.string :as str]))
 
 (defn read-data []
   (-> (slurp "data/aoc2020_day16.txt")
+      #_(slurp "data/input.txt")
       (clojure.string/split #"\n\n" )))
 
 (defn get-range [rr]
   (let [[n1 n2] (clojure.string/split rr #"-")]
     [(Integer/parseInt n1) (Integer/parseInt n2)]))
 
+(defn parse-ticket [l]
+  (->>  (clojure.string/split l #"," )
+        (map #(Integer/parseInt %))))
+
+
+(defn parse-rules [rules]
+  (->> rules
+       (clojure.string/split-lines)
+       (map (fn [l]
+              (let [[field ranges] (clojure.string/split l #": ")
+                    [r1 r2]        (clojure.string/split ranges #" or ")]
+                [field (get-range r1) (get-range r2)])))))
+
+(defn valid-numbers [rules]
+  (->> rules
+       (map (fn [[_ [a b] [c d]]]
+              (set (concat (range a (inc b))
+                           (range c (inc d))))))
+       (apply clojure.set/union)))
+
 (defn part-1 []
-  (let [[r _ others]  (-> (slurp "data/aoc2020_day16.txt")
-                          (clojure.string/split #"\n\n"))
-        valid        (->> r
-                          (clojure.string/split-lines)
-                          (map (fn [l]
-                                 (let [[field ranges] (clojure.string/split l #": ")
-                                       [r1 r2]         (clojure.string/split ranges #" or ")]
-                                   [field (get-range r1) (get-range r2)])))
-                          (map (fn [[_ [a b] [c d]]]
-                                 (set (concat (range a (inc b))
-                                              (range c (inc d))))))
-                          (apply clojure.set/union))]
+  (let [[r _ others] (read-data)
+        valid        (->> (parse-rules r)
+                          (valid-numbers))]
     (->> others
          (clojure.string/split-lines)
          (drop 1)
@@ -33,60 +46,45 @@
          (apply +))))
 
 (defn part-2 []
-  (let [[r t nearby] (read-data)
-        rules        (->> r
-                          (clojure.string/split-lines)
-                          (map (fn [l]
-                                 (let [[policy ranges] (clojure.string/split l #": ")
-                                       [r1 r2] (clojure.string/split ranges #" or ")]
-                                   [policy (rr r1) (rr r2)]))))
-        t (mapv #(Integer/parseInt %) (-> t
-                                         (clojure.string/split-lines)
-                                         second
-                                         (clojure.string/split #",")
-                                         vec))
-        others (->> (clojure.string/split-lines nearby)
-                    (drop 1)
-                    (map #(clojure.string/split % #","))
-                    (map (fn [l]
-                           (set (map #(Integer/parseInt %) l)))))
-        valid     (->> rules
-                       (map (fn [[_ [a b] [c d]]]
-                              (set (flatten
-                                    [(range a (inc b))
-                                     (range c (inc d))]))))
-                       (apply clojure.set/union))
-        valid-nearby    (->> others
-                             (remove (fn [ns]
-                                       (pos?
-                                        (->> (remove valid ns)
-                                             (reduce +))))))
-        nearby (->> (clojure.string/split-lines nearby)
-                    (drop 1)
-                    (map #(clojure.string/split % #","))
-                    (map (fn [l]
-                           (map #(Integer/parseInt %) l))))
-        invalid-ranges     (->> rules
-                                (map (fn [[r [a b] [c d]]]
-                                       [r (set (flatten [(range (inc b) c)]))])))
-        fields     (->> nearby
-                        (apply map vector)
-                        (map #(into #{} %))
-                        (map (fn [ns]
-                               (->> invalid-ranges
-                                    (map (fn [[r-name r-set]]
-                                           (when (zero? (count (clojure.set/intersection ns r-set)))
-                                             r-name)))
-                                    (remove nil?)
-                     (into #{})))))
-        my-seq (->> (zipmap(range) fields)
-                    (map (fn [[k v]]
-                           [k (count v) v]))
-                    (sort-by second))]
-    (->>     (interleave my-seq (rest my-seq))
-             (partition 2)
-             (map (fn [[[a b c] [d e f]]]
-                    [d (clojure.set/difference f c) ])))
+  (let [[rs t ns]     (read-data)
+        rules         (parse-rules rs)
+        valid-numbers (valid-numbers rules)
+        ticket        (-> (clojure.string/split-lines t)
+                           last
+                           (parse-ticket)
+                           vec)
 
-    (->>     (map  #(get t %) [6 11 5 10 16 19])
+        valid-tickets (->> (clojure.string/split-lines ns)
+                            (drop 1)
+                            (map parse-ticket)
+                            (remove #(seq (remove valid-numbers %))))
+
+        invalid-ranges (->> rules
+                            (map (fn [[r [a b] [c d]]]
+                                   [r (->> (concat (range 0 a)
+                                                   (range (inc b) c)
+                                                   (range (inc d) 999))
+                                           (into #{}))])))
+        valid-fields   (->> valid-tickets
+                            (apply map vector)
+                            (map #(into #{} %))
+                            (map (fn [xs]
+                                   (->> invalid-ranges
+                                        (map (fn [[field inv]]
+                                               (when (empty? (clojure.set/intersection xs inv))
+                                                 field)))
+                                        (remove nil?)
+                                        (into #{})))))
+
+        sorted-fields  (->> (map-indexed (fn [idx itm] {:pos idx :fields itm}) valid-fields)
+                            (sort-by (comp count :fields)))]
+
+    (->>     (interleave sorted-fields (rest sorted-fields))
+             (partition 2)
+             (map (fn [[f1 f2]]
+                    {:pos    (:pos f2)
+                     :fields (clojure.set/difference (:fields f2) (:fields f1))} ))
+             (cons (first sorted-fields))
+             (filter #(clojure.string/starts-with? (first (:fields %)) "departure" ))
+             (map (comp ticket :pos))
              (reduce *))))

@@ -5,6 +5,7 @@
 
 (defn part-1
   [input steps]
+  ;; We can improve performance with a transient or a java array
   (loop [step (count input)
          said (zipmap (butlast input)
                       (map inc (range)))

@@ -3,7 +3,6 @@
 
 (defn read-data []
   (-> (slurp "data/aoc2020_day16.txt")
-      #_(slurp "data/input.txt")
       (clojure.string/split #"\n\n" )))
 
 (defn get-range [rr]
@@ -13,7 +12,6 @@
 (defn parse-ticket [l]
   (->>  (clojure.string/split l #"," )
         (map #(Integer/parseInt %))))
-
 
 (defn parse-rules [rules]
   (->> rules
@@ -37,12 +35,9 @@
     (->> others
          (clojure.string/split-lines)
          (drop 1)
-         (map (fn [l]
-                (->> (clojure.string/split l #",")
-                     (map #(Integer/parseInt %))
-                     (into #{})
-                     (remove valid)
-                     (reduce +))))
+         (map #(->> (parse-ticket %)
+                    (remove valid)
+                    (reduce +)))
          (apply +))))
 
 (defn part-2 []

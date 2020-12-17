@@ -81,7 +81,6 @@
                 (map (fn [{:keys [mask writes]}]
                        (->> writes
                             (map (fn [[a v]]
-                                   #_[(xxx mask a) v]
                                    (->> (xxx mask a)
                                         (splat-2)
                                         (map (fn [a]

@@ -27,9 +27,8 @@
         my-hash (reduce #(assoc %1 %2 1)
                         (my-array 2020)
                         data)
-        ns      (->> #_(range (int (/ 2020 3)))
-                     #_(filter #(get my-hash %))
-                     data
+        ns      (->> (range (int (/ 2020 3)))
+                     (filter #(get my-hash %))
                      (map #(valid-entries my-hash data (- 2020 %)))
                      (remove empty?)
                      first)]

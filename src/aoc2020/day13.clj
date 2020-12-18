@@ -19,15 +19,7 @@
                        (map toInt)
                        sort)
         last-bus (map #(mod my-time %) buses)]
-    (prn buses)
-    (prn last-bus)
     (map #(- %1 %2) buses last-bus)))
-
-(defn valid [busid wait n]
-  (if (> wait busid)
-    (= 0 (mod (- n wait) busid))
-    (or  (= wait (- busid (mod n busid)))
-         (= wait 0 (mod n busid)))))
 
 
 (defn generate-times [[idx id]]
@@ -57,7 +49,8 @@
                                         [idx (toInt busid)])))
                       (sort-by second))]
     (loop [bs buses]
-      (if (>= (count bs) 2)
-        (recur (sort-by second (cons (replace-bus (take 2 bs)) (drop 2 bs))))
+      (if (> (count bs) 1)
+        (recur (->> (cons (replace-bus (take 2 bs)) (drop 2 bs))
+                    (sort-by second )))
         (let [[stop freq] (first bs)]
           (- freq stop))))))

@@ -105,9 +105,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn make-data [n]
-  (let [alives   (->> (data)
-                      (apply map vector)
-                      vec)]
+  (let [alives   (mapv vec (data))]
     (->> (for [r (range (count alives))
                c (range (count (first alives)))]
            (when (= \# (get-in alives [r c]))

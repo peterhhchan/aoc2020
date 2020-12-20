@@ -14,7 +14,6 @@
 
 (defn rotate-grid [g] (apply mapv vector (reverse g)))
 (defn transpose-grid [g] (apply mapv vector g))
-
 (defn all-rotations [g]
   (let [rots  (->> (iterate rotate-grid g)
                    (take 4))]
@@ -100,12 +99,11 @@
                      (inc x) 0)
                   grid))))))
 
-
 (defn stich-images [g]
   (->>  (for [y (range 12)]
           (for [x (range 12)]
             [(- 11 x) (- 11 y)]))
-        (mapv (partial mapv #(strip-border (:image (get g %)))))
+        (map (partial mapv #(strip-border (:image (get g %)))))
         (mapv (fn [ms] (apply map concat ms)))
         (apply concat)
         (mapv vec)))

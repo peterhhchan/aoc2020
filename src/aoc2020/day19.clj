@@ -82,9 +82,9 @@
         all-rules (set (merge-rule lib 0))
         len       (count (first heads))]
 
-    (prn (count (first heads)))
-    (prn (count (s/split-lines msgs)))
-    (prn (count (set/intersection heads tails)))
+;    (prn (count (first heads)))
+;    (prn (count (s/split-lines msgs)))
+;    (prn (count (set/intersection heads tails)))
 
     (->> msgs
          (s/split-lines)

@@ -3,8 +3,7 @@
 
 (defn data []
   (-> (slurp "data/aoc2020_day20.txt")
-       (s/split #"\n\n")
-))
+       (s/split #"\n\n")))
 
 (defn toInt [s]
   (Integer/parseInt s))
@@ -126,11 +125,46 @@
       [(- 11 x) (- 11 y)])))
 
 (defn part-2b []
-  (let [grid (part-2)]
-    (->> (grid-xy)
-         (mapv (partial mapv (fn [xy]
-#_                               (:tile (get grid xy))
-                               (strip-border (:tile (get grid xy)))))))))
+  (let [grid    (part-2)
+        picture (->> (grid-xy)
+                     (mapv (partial mapv (fn [xy]
+                                           ;(:tile (get grid xy))
+                                           (strip-border (:tile (get grid xy))))))
+                     (giant-grid))
+        monsters (map offsets (all-rotations monster))
+        blacks (->> (for [x (range (count (first picture)))
+                          y (range (count (first picture)))]
+                      (when (= \# (get-in picture [x y]))
+                        [x y]))
+                    (remove nil?)
+                    (into #{}))]
+
+    (prn (count blacks))
+    (->>  (for [x (range (count (first picture)))
+                y (range (count picture))]
+            (->> monsters
+                 (map (fn [monster]
+                         (let [pos (map (fn [[a b]] [(+ a x) (+ b y)]) monster)]
+                           (when (every? #(= \# (get-in picture [(first %) (second %)])) pos)
+                             (into #{} pos)))))
+                 (remove empty?)
+                 (remove nil?)
+                 (apply clojure.set/union)))
+          (remove empty?)
+          (apply clojure.set/union)
+          count)))
+
+(defn rotate-grid [g]
+  (apply mapv vector (reverse g)))
+
+(defn transpose-grid [g]
+  (apply mapv vector g))
+
+(defn all-rotations [g]
+  (let [rots  (->> (iterate rotate-grid g)
+                   (take 4))]
+
+    (concat rots (map transpose-grid rots))))
 
 (defn  rotate-pic [{:keys [tile] :as obj}]
   (create-pic  (assoc obj :tile  (apply map vector (reverse tile)))))
@@ -158,6 +192,13 @@
    " #  #  #  #  #  #   "])
 
 (defn giant-grid [g]
-  (->> (map (fn [ms] (apply map concat ms)) g)
-       (apply concat))
-)
+  (->> (mapv (fn [ms] (apply map concat ms)) g)
+       (apply concat)
+       (mapv vec)))
+
+(defn offsets [monster]
+  (->>   (for [x (range (count (first monster)))
+               y (range (count monster))]
+           (when (= \# (get-in monster [y x]))
+             [x y]))
+         (remove nil?)))

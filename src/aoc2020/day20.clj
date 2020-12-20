@@ -1,115 +1,96 @@
 (ns aoc2020.day20
   (:require [clojure.string :as s]))
 
-(defn data []
+(defn images []
   (-> (slurp "data/aoc2020_day20.txt")
-       (s/split #"\n\n")))
+      (s/split #"\n\n")))
 
 (defn toInt [s]
   (Integer/parseInt s))
 
-(defn toLong [s]
-  (Long/parseLong s))
-
-(defn side [s]
+(defn border-id [s]
   (-> (apply str (map #({\. "0" \# "1"} %) s))
       (Integer/parseInt 2)))
 
+(defn rotate-grid [g] (apply mapv vector (reverse g)))
+(defn transpose-grid [g] (apply mapv vector g))
 
-(defn ids [tile]
-  (let [t1   (side (first tile))
-        t2   (side (reverse (first tile)))
-        r1 (side (first (rotate-picture tile)))
-        r2 (side (reverse (first (rotate-picture tile))))
-        b1   (side (first (rotate-picture (rotate-picture tile))))
-        b2  (side (reverse (first (rotate-picture (rotate-picture tile)))))
-        l1  (side (first (rotate-picture (rotate-picture (rotate-picture tile)))))
-        l2  (side (reverse (first (rotate-picture (rotate-picture (rotate-picture tile))))))]
-    {:all #{t1 t2 l1 l2 r1 r2 b1 b2}}))
+(defn all-rotations [g]
+  (let [rots  (->> (iterate rotate-grid g)
+                   (take 4))]
+    (concat rots (map transpose-grid rots))))
+
+(defn borders [image]
+  {:top     (border-id (first image))
+   :bottom  (border-id (last image))
+   :right   (border-id (map last image))
+   :left    (border-id (map first image))})
+
+(defn all-sides [image]
+  (->> (all-rotations image)
+       (map borders)
+       (mapcat (juxt :top :bottom :right :left))
+       set))
+
+(defn all-neighboring-edges [tiles]
+  (->> tiles
+       (mapcat (comp seq :edges))
+       frequencies
+       (filter #(= 2 (second %)))
+       (map first)
+       (set)))
+
+(defn all-tiles []
+(->> (images)
+     (map s/split-lines)
+     (map (fn [[header & img]]
+            {:id    (toInt (second (re-find #"Tile ([\d]+)\:" header)))
+             :image (mapv vec img)
+             :edges (all-sides (mapv vec img))}))
+     (into #{})))
+
+(defn corners [tiles neighbors]
+   (->> tiles
+        (filter #(= 4 (count (clojure.set/intersection neighbors (:edges %)))))))
 
 (defn part-1 []
-  (let [d (data)
-        all-tiles (->> d
-                   (map s/split-lines)
-                   (map (fn [tile]
-                          (let [[_ id] (re-find #"Tile ([\d]+)\:" (first tile))
-                                t (mapv vec (rest tile))]
-                            (merge {:id (toInt id)
-                                    :tile t}
-                                   (ids t)))))
-                   (into #{}))
-       cxs (->> (frequencies (flatten ( map seq (map :all all-tiles))))
-                (filter #(= 2 (second %)))
-                (map first)
-                (into #{}))]
-
-    (->> all-tiles
-         (filter (fn [t] (= 4  (count (clojure.set/intersection cxs (:all t))))))
+  (let [all-tiles     (all-tiles)
+        all-neighbors (all-neighboring-edges all-tiles)]
+    (->> (corners  all-tiles all-neighbors)
          (map :id)
          (reduce *))))
 
-(defn create-pic [{:keys [tile] :as pic}]
-  (let [t (side (first tile))
-        b (side (last tile))
-
-        r (side (map last tile))
-        l (side (map first tile))]
-    (merge pic
-           {:top   t
-            :right  r
-            :bottom b
-            :left l})))
+(defn all-images [{:keys [id image edges]}]
+  (->> (all-rotations image)
+       (map #(merge {:id id
+                     :edges edges
+                     :image %}
+                    (borders %)))))
 
 (defn remove-tile [tiles t]
   (set (remove #(= (:id %) (:id t)) tiles)))
 
-(defn part-2 []
-  (let [d (data)
-        all-tiles (->> d
-                   (map s/split-lines)
-                   (map (fn [tile]
-                          (let [[_ id] (re-find #"Tile ([\d]+)\:" (first tile))
-                                t (mapv vec (rest tile))]
-                            (merge {:id (toInt id)
-                                    :tile t}
-                                   (ids t)))))
-                   (into #{}))
-        freqs (frequencies (apply concat (map seq (map :all all-tiles))))
-        cxs   (->> (filter #(= 2 (second %)) freqs)
-                   (map first)
-                   (into #{}))
-
-        start-tile
-        (->> all-tiles
-             (filter (fn [t] (= 4  (count (clojure.set/intersection cxs (:all t))))))
-             (first)
-             (rotations)
-             (filter  #(cxs (:top %)))
-             (filter  #(cxs (:left %)))
-             first)]
-
-    (loop [tiles (remove-tile all-tiles start-tile)
-
-           grid  {[0 0] start-tile}
-           top  (:top start-tile)
-           left (:left start-tile)
-           x 0
-           y 0]
+(defn solve-image [all-tiles all-neighbors start-tile]
+  (loop [tiles (remove-tile all-tiles start-tile)
+         grid  {[0 0] start-tile}
+         top   (:top start-tile)
+         left  (:left start-tile)
+         x     0
+         y     0]
       (if (= x y 11)
         grid
         (if (< y 11)
-          (let [m        (first (filter #(get (:all %) top) tiles))
-                next-tile      (->> (rotations m)
-                                    (filter #(= (:bottom %) top))
-                                    first)]
-
+          (let [m         (first (filter #(get (:edges %) top) tiles))
+                next-tile (->> (all-images m)
+                               (filter #(= (:bottom %) top))
+                               first)]
             (if next-tile
               (recur (remove-tile tiles next-tile)
                      (merge grid {[x (inc y)] next-tile})
                      (:top next-tile) left
                      x (inc y))))
-          (let [m   (first (filter #(get (:all %) left) tiles))
-                next-tile (->> (rotations m)
+          (let [m         (first (filter #(get (:edges %) left) tiles))
+                next-tile (->> (all-images m)
                                (filter #(= (:right  %) left))
                                first)]
             (if next-tile
@@ -117,84 +98,26 @@
                      (merge grid {[(inc x) 0] next-tile})
                      (:top next-tile) (:left next-tile)
                      (inc x) 0)
-                  grid)))))))
-
-(defn grid-xy []
-  (for [y (range 12)]
-    (for [x (range 12)]
-      [(- 11 x) (- 11 y)])))
-
-(defn part-2b []
-  (let [grid    (part-2)
-        picture (->> (grid-xy)
-                     (mapv (partial mapv (fn [xy]
-                                           ;(:tile (get grid xy))
-                                           (strip-border (:tile (get grid xy))))))
-                     (giant-grid))
-        monsters (map offsets (all-rotations monster))
-        blacks (->> (for [x (range (count (first picture)))
-                          y (range (count (first picture)))]
-                      (when (= \# (get-in picture [x y]))
-                        [x y]))
-                    (remove nil?)
-                    (into #{}))]
-
-    (prn (count blacks))
-    (->>  (for [x (range (count (first picture)))
-                y (range (count picture))]
-            (->> monsters
-                 (map (fn [monster]
-                         (let [pos (map (fn [[a b]] [(+ a x) (+ b y)]) monster)]
-                           (when (every? #(= \# (get-in picture [(first %) (second %)])) pos)
-                             (into #{} pos)))))
-                 (remove empty?)
-                 (remove nil?)
-                 (apply clojure.set/union)))
-          (remove empty?)
-          (apply clojure.set/union)
-          count)))
-
-(defn rotate-grid [g]
-  (apply mapv vector (reverse g)))
-
-(defn transpose-grid [g]
-  (apply mapv vector g))
-
-(defn all-rotations [g]
-  (let [rots  (->> (iterate rotate-grid g)
-                   (take 4))]
-
-    (concat rots (map transpose-grid rots))))
-
-(defn  rotate-pic [{:keys [tile] :as obj}]
-  (create-pic  (assoc obj :tile  (apply map vector (reverse tile)))))
-
-(defn  transform-pic [{:keys [tile] :as obj}]
-  (create-pic  (assoc obj :tile (apply map vector tile))))
+                  grid))))))
 
 
-(defn rotations [pic]
-  (let [rots (->> (iterate rotate-pic pic)
-                  (drop 1)
-                  (take 4))]
-    (->> (map transform-pic rots)
-         (concat rots))))
+(defn stich-images [g]
+  (->>  (for [y (range 12)]
+          (for [x (range 12)]
+            [(- 11 x) (- 11 y)]))
+        (mapv (partial mapv #(strip-border (:image (get g %)))))
+        (mapv (fn [ms] (apply map concat ms)))
+        (apply concat)
+        (mapv vec)))
 
 (defn strip-border [t]
   (->> (butlast (rest t))
        (mapv (comp vec butlast rest))))
 
-
-
 (def monster
   ["                  # "
    "#    ##    ##    ###"
    " #  #  #  #  #  #   "])
-
-(defn giant-grid [g]
-  (->> (mapv (fn [ms] (apply map concat ms)) g)
-       (apply concat)
-       (mapv vec)))
 
 (defn offsets [monster]
   (->>   (for [x (range (count (first monster)))
@@ -202,3 +125,43 @@
            (when (= \# (get-in monster [y x]))
              [x y]))
          (remove nil?)))
+
+(defn monster-offsets []
+  (map offsets (all-rotations monster)))
+
+(defn base-roughness [picture]
+  (->> (for [x (range (count (first picture)))
+             y (range (count (first picture)))]
+         (when (= \# (get-in picture [x y]))
+           [x y]))
+       (remove nil?)
+       (into #{})))
+
+(defn part-2 []
+  (let [tiles         (all-tiles)
+        all-neighbors (all-neighboring-edges tiles)
+        start-tile    (->> (corners tiles all-neighbors)
+                              first
+                              (all-images)
+                              (filter #(all-neighbors (:left %)))
+                              (filter #(all-neighbors (:top %)))
+                              ;; There are two possible starting positions for the corner
+                              first)
+        image         (solve-image tiles all-neighbors start-tile)
+        picture       (stich-images image)
+        roughness     (base-roughness picture)
+        monsters      (monster-offsets)]
+    (->>  (for [x (range (count (first picture)))
+                y (range (count picture))]
+            (->> monsters
+                 (map (fn [monster]
+                        (let [pos (map (fn [[a b]] [(+ a x) (+ b y)]) monster)]
+                           (when (every? #(= \# (get-in picture [(first %) (second %)])) pos)
+                             (into #{} pos)))))
+                 (remove empty?)
+                 (remove nil?)
+                 (apply clojure.set/union)))
+          (remove empty?)
+          (apply clojure.set/union)
+          count
+          (- (count roughness)))))

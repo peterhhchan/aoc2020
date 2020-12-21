@@ -12,54 +12,81 @@
    "sqjhc fvjkl (contains soy)"
    "sqjhc mxmxvkd sbzzf (contains fish)"])
 
-
-
 (defn compare-foods [f1 f2 k]
   (clojure.set/intersection (k f1) (k f2)))
 
 (defn reduce-foods [d]
     (->> (for [x (range (count d))
-               y (range (count d))]
-           (when (seq (compare-foods (d x)(d y) :allergens))
-             [(compare-foods (d x)(d y) :allergens)
-              (compare-foods (d x)(d y) :foods)]))
-         (remove nil?)
+               y (range (count d))
+               :let [allergens (compare-foods (d x)(d y) :allergens)]
+               :when (seq allergens)]
+           [allergens (compare-foods (d x)(d y) :foods)])
          (group-by first)
          (mapv (fn [[k v]]
                 {:allergens k
                  :foods (apply clojure.set/intersection (map second v))}))))
 
-(defn part-1 []
-  (let [d (->> (data)
-               (mapv (fn [l]
-                      (let [allergen-list (re-find #"(\(.*\))+" l)
-                            foods      (re-seq #"[\w]+ " l)
-                            allergens    (re-seq #" [\w]+" (last allergen-list))]
-                        {:foods (disj (set foods) "contains ")
-                         :allergens (set allergens)}))))
-        allergens
-        (loop [mm (reduce-foods d)
-               mms {}]
-          (if (= (count mms) 8)
-            mms
-            (let [{:keys [allergens foods]}    (->> mm
-                                                    (filter #(= 1 (count (:foods %))))
-                                                    first)]
-              (recur (->> mm
-                          (map #(update % :foods disj (first foods)))
-                          (map #(update % :allergens disj (first allergens)))
-                          (remove #(empty? (:allergens %)))
-                          (remove #(empty? (:foods %))))
-                     (merge mms
-                            {(first allergens) (first foods)})))))
-                                        ;      aas (set (vals allergens))
-        ]
+(defn find-allergens [ingredients]
+  (let [num-allergens (->> ingredients
+                           (map :allergens)
+                           (apply clojure.set/union)
+                           count) ]
+    (loop [mm             (reduce-foods ingredients)
+           allergen->food {}]
+      (if (= (count allergen->food) num-allergens)
+        allergen->food
+        (let [{:keys [allergens foods]} (->> mm
+                                             (filter #(= 1 (count (:foods %))))
+                                             first)]
+          (recur (->> mm
+                      (map #(update % :foods disj (first foods)))
+                      (map #(update % :allergens disj (first allergens)))
+                      (remove #(empty? (:allergens %)))
+                      (remove #(empty? (:foods %))))
+                 (merge allergen->food
+                        {(first allergens) (first foods)})))))))
 
-#_    (prn allergens)
-#_    (->> (sort-by first allergens)
-         (map second)
-         (map str/trim)
-         (str/join ","))))
+(defn ingredients []
+  (->> (data)
+       (mapv (fn [l]
+               (let [allergen-list (re-find #"(\(.*\))+" l)
+                     foods      (re-seq #"[\w]+ " l)
+                     allergens    (re-seq #" [\w]+" (last allergen-list))]
+                 {:foods (disj (set foods) "contains ")
+                  :allergens (set allergens)})))))
+
+(defn part-1 []
+  (let [ingredients (ingredients)
+        allergens (-> (find-allergens ingredients)
+                      vals
+                      set)]
+    (->> ingredients
+         (mapcat :foods)
+         (remove allergens)
+         count)))
 
 (defn part-2 []
-  (let [d (data)]))
+(->>  (ingredients)
+      (find-allergens)
+      (sort-by first)
+      (map second)
+      (map str/trim)
+      (str/join ",")))
+
+;; Method 2 - way cleaner
+(defn part-1 []
+  (let [ingredients (ingredients)
+        allergens   (->> ingredients
+                         (mapcat :allergens)
+                         (into #{}))
+        dangerous     (->> allergens
+                           (map (fn [a]
+                                  (->> ingredients
+                                       (filter #((:allergens %) a))
+                                       (map :foods)
+                                       (apply clojure.set/intersection))))
+                           (apply clojure.set/union))]
+    (->> ingredients
+         (mapcat :foods)
+         (remove dangerous)
+         count)))

@@ -27,6 +27,7 @@
        (iterate (partial + id))))
 
 (defn replace-bus [bs]
+  (prn bs)
   (let [first-stop
         (loop [times (map generate-times bs)]
           (let [vs (map first times)
@@ -35,22 +36,36 @@
             (if (= mn mx)
               mn
               (recur (->> times
-                          (map (fn [ts]
-                                 (drop-while #(< % mx) ts))))))))
+                          (map (fn [ts] (drop-while #(< % mx) ts))))))))
         bus-freq (reduce * (map second bs))]
     [(- bus-freq first-stop)  bus-freq]))
 
-(defn part-2-b []
-  (let [d (data)
-        bus-data (second d)
-        buses    (->> (s/split bus-data  #",")
-                      (keep-indexed (fn [idx busid]
-                                      (when (not= busid "x")
-                                        [idx (toInt busid)])))
-                      (sort-by second))]
-    (loop [bs buses]
-      (if (> (count bs) 1)
+(defn buses []
+  (->> (s/split (second (data))  #",")
+       (keep-indexed #(when (not= %2 "x") [%1 (toInt %2)]))
+       (sort-by second)))
+
+(defn part-2 []
+  (loop [bs (buses)]
+    (if (> (count bs) 1)
+      (recur (->> (cons (replace-bus (take 2 bs)) (drop 2 bs))
+                  (sort-by second )))
+      (let [[stop freq] (first bs)]
+        (- freq stop)))))
+
+(defn part-2b []
+  ;; Take 2
+  ;; Optimal solution is to find the two factors closest to the squareroot
+  (loop [bs (buses)]
+    (prn (count bs))
+    (if (> (count bs) 1)
+      (if (= (count bs) 2)
         (recur (->> (cons (replace-bus (take 2 bs)) (drop 2 bs))
                     (sort-by second )))
-        (let [[stop freq] (first bs)]
-          (- freq stop))))))
+        (let [b1 (first bs)
+              b2 (first (drop 1 (reverse bs)))
+              bss (set bs)]
+          (recur (->> (cons (replace-bus [b1 b2]) (seq (disj bss b1 b2)))
+                      (sort-by second )))))
+      (let [[stop freq] (first bs)]
+        (- freq stop)))))

@@ -18,47 +18,13 @@
   (let [d (data)]))
 
 (def input [1 9 3 4 6 7 2 5 8])
-;(def input [3 8 9 1 2 5 4 6 7])
-
-(defn step-cups [[current cups n]]
-  (let [current-idx (.indexOf cups current)
-        to-move     (-> (into cups cups)
-                        (subvec (inc current-idx) (+ 4 current-idx)))
-        remaining   (vec (remove (set to-move) cups))
-        destination (->> (concat (range (dec current) 0 -1)
-                                 (range n 0 -1))
-                         (filter (set remaining) )
-                         first)
-        dest-idx    (.indexOf remaining destination)
-        [l r]       (split-at dest-idx remaining )
-        new-order   (concat [(first r)] to-move (rest r) l)
-        new-order   (concat new-order new-order)
-        drop-n      (mod (- (.indexOf new-order current)
-                            (.indexOf cups current))
-                    (count cups))
-        new-current (get (vec new-order) (inc (.indexOf new-order current))) ]
-    [new-current
-     (->> new-order
-          (drop drop-n)
-          (take (count cups))
-          vec)
-     n]))
-
-(defn make-answer [v]
+;;(def input [3 8 9 1 2 5 4 6 7])
+(defn answer-1 [v]
   (->> (concat v v)
        (drop-while #(not= 1 %))
        (drop-while #{1})
        (take (dec (count v)))
        (apply str)))
-
-(defn part-1 []
-"25468379"
-  (->> [(first input) input (apply max input)]
-       (iterate step-cups)
-       (drop 100)
-       first
-       second
-       make-answer))
 
 (defn answer-2 [v]
   (->> (concat v v)
@@ -66,49 +32,40 @@
        (drop-while #{1})
        (take 2)))
 
-(defn step-cups-2 [[current cups n magic-index]]
-  (let [current-idx magic-index
-        bigvec      (vec (into cups cups))
-        to-move     (-> bigvec
-                        (subvec (inc current-idx) (+ 4 current-idx)))
 
-        remaining  (if (< (+ 4 current-idx) n)
-                     (vec (concat (subvec cups 0 (inc current-idx))
-                                  (subvec cups (+ 4 current-idx))))
-                     (subvec cups
-                             (max 0 (- (+ 4 current-idx) n))
-                             (min n (inc current-idx))))
-;        remaining   (vec (remove (set to-move) cups))
+(defn step-faster [all-cups]
+  (let [current-cup  (first all-cups)
+        cups         (rest all-cups)
+        num-cups     (count all-cups)
 
-        destination       (->> (concat (range (dec current) 0 -1)
-                                       (range n 0 -1))
-                               (remove (set to-move) )
-                               first)
-        dest-idx    (.indexOf remaining destination)
-        [l r]       (split-at dest-idx remaining )
-        new-order   (concat [(first r)] to-move (rest r) l)
-        new-order   (concat new-order new-order)
-        find-idx    (.indexOf new-order current)
-        drop-n      (mod (- find-idx
-                            magic-index)
-                         (count cups))
-        new-current (get (vec new-order) (inc find-idx)) ]
+        to-move      (take 3 cups)
+        next-current (first (drop 3 cups))
 
-    [new-current
-     (->> new-order
-          (drop drop-n)
-          (take (count cups))
-          vec)
-     n
-     (inc magic-index)]))
+        destination (->> (concat (range (dec current-cup) 0 -1)
+                                 (range num-cups 0 -1))
+                         (remove (set to-move) )
+                         first)
+        next-seq  (concat (drop 3 cups) (list current-cup))
+        res       (partition-by #{destination} next-seq)]
+    (cond (#{destination} (ffirst res))
+          (concat (list destination) to-move (second res))
+          (= 3 (count res))
+          (concat (first res) (list destination) to-move (first (drop 2 res)))
+          :else
+          (rest res))))
+
+(defn part-1 []
+"25468379"
+  (->> (iterate step-faster input)
+       (drop 100)
+       first
+       answer-1))
 
 (defn part-2 []
-  (let [mx (apply max input)
-        n 5000
+  (let [n 100000
+        mx (apply max input)
         new-input (vec (concat input (range (inc mx) (inc n))))]
-  (->> [(first new-input) new-input n 0]
-       (iterate step-cups-2)
-       (drop n)
-       first
-       second
-       answer-2)))
+    (->> (iterate step-faster new-input)
+         (drop 100)
+         first
+         answer-2)))

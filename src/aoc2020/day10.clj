@@ -7,26 +7,12 @@
        (map #(Long/parseLong %))))
 
 (defn part-1 []
-  (let [adapters     (sort (read-data))
-        ;; Add the 0 and the +3
-        adapters*   (cons 0 (into (list (+ 3 (apply max adapters))) (reverse adapters)) )
-        f (->> (interleave adapters* (drop 1 adapters*))
-               (partition 2)
-               (map #(- (second %) (first %)))
-               (frequencies))]
-
-    (* (f 1) (f 3))))
-
-(defn part-1 []
-  ;; Alternate solution
-  (let [adapters  (sort (read-data))
-        f (->> (interleave adapters (drop 1 adapters))
-               (partition 2)
-               (map #(- (second %) (first %)))
-               (frequencies))]
-    (prn (first adapters))
-    (prn (last adapters))
-    f))
+  (let [adapters (cons 0 (sort (read-data)))
+        f        (->> (map - (next adapters) adapters)
+                    (frequencies))]
+    (->> (update f 3 inc)
+         vals
+         (apply *))))
 
 
 (defn part-2 []

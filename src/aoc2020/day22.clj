@@ -41,6 +41,27 @@
         (second)
         (score-deck))))
 
+;; Better solution for part 1
+
+(defn game [[d1 d2]]
+  (let [c1 (first d1)
+        c2 (first d2)]
+    (if (> c1 c2)
+      [(concat (rest d1) [c1 c2]) (rest d2)]
+      [(rest d1) (concat (rest d2) [c2 c1])])))
+
+(defn part-1b []
+  (let [{:keys [p1 p2]} (decks)]
+    (->> (iterate game [p1 p2])
+         (drop-while (fn [[d1 d2]] (and (seq d1) (seq d2))))
+         first
+         (filter seq)
+         first
+         reverse
+         (map * (next (range)))
+         (reduce +))))
+
+
 (def mem-game-2
   (memoize
    (fn [player1 player2 ]
@@ -56,8 +77,8 @@
                    sub-game? (and (<= f1 (dec (count d1)))
                                   (<= f2 (dec (count d2))))]
                (if (or (and sub-game?
-                            (= :p1 (:winner (mem-game-2 (subvec d1 1 (inc f1))
-                                                        (subvec d2 1 (inc f2))))))
+                            (#{:p1} (:winner (mem-game-2 (subvec d1 1 (inc f1))
+                                                         (subvec d2 1 (inc f2))))))
                        (and (not sub-game?)
                             (> f1 f2)))
                  (recur (conj (subvec d1 1) f1 f2)

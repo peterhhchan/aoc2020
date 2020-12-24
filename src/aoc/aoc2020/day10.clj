@@ -1,4 +1,4 @@
-(ns aoc2020.day10)
+(ns aoc.aoc2020.day10)
 
 
 (defn read-data []

@@ -1,4 +1,4 @@
-(ns aoc2020.day1)
+(ns aoc.aoc2020.day1)
 
 (defn read-data []
   (->> (slurp "data/aoc2020_day1.txt")

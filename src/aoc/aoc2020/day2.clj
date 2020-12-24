@@ -1,4 +1,4 @@
-(ns aoc2020.day2)
+(ns aoc.aoc2020.day2)
 
 (defn valid? [l]
   (let [[policy pw] (clojure.string/split l #":")

@@ -1,4 +1,4 @@
-(ns aoc2020.day7)
+(ns aoc.aoc2020.day7)
 
 (defn rules []
   {"light red"    {"bright white" 1

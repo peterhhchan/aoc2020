@@ -1,4 +1,4 @@
-(ns aoc2020.day17
+(ns aoc.aoc2020.day17
   (:require [clojure.string :as s]))
 
 ;; Method 1

@@ -1,4 +1,4 @@
-(ns aoc2020.day6)
+(ns aoc.aoc2020.day6)
 
 (defn groups []
 (-> (slurp "data/aoc2020_day6.txt")

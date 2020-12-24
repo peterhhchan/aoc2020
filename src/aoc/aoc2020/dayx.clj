@@ -1,8 +1,8 @@
-(ns aoc2020.dayx
+(ns aoc.aoc2020.dayx
   (:require [clojure.string :as s]))
 
 (defn data []
-  (->> (slurp "data/aoc2020_day.txt")
+  (->> (slurp "data/aoc.aoc2020.day.txt")
        s/split-lines))
 
 (defn toInt [s]

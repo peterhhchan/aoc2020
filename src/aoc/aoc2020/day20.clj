@@ -1,4 +1,4 @@
-(ns aoc2020.day20
+(ns aoc.aoc2020.day20
   (:require [clojure.string :as s]))
 
 (defn images []

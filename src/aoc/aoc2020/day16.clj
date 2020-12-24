@@ -1,4 +1,4 @@
-(ns aoc2020.day16
+(ns aoc.aoc2020.day16
   (:require [clojure.string :as str]))
 
 (defn read-data []

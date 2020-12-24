@@ -1,13 +1,14 @@
-(ns aoc2020.day24)
+(ns aoc.aoc2020.day24
+  (:require [clojure.string :as s]))
 
 (defn tile [t]
   (let [f     (frequencies t)
-        ew    (- (get f "e" 0) (f "w" 0))
+        ew    (- (get f "e" 0) (get f "w" 0))
         ns    (- (+ (get f "nw" 0) (get f "ne" 0))
                  (+ (get f "sw" 0) (get f "se" 0)))
         ew-ns (- (+ (get f "ne" 0) (get f "se" 0))
                  (+ (get f "nw" 0) (get f "sw" 0)))]
-    [(+ ew (/ ew-ns 2)) ns]))
+    [(+ ew (/ ew-ns 2)), ns]))
 
 (defn tiles []
   (->> (slurp "data/aoc2020_day24.txt")
@@ -23,19 +24,18 @@
        (filter black?)
        count))
 
-(defn neighbors [[x y]]
-  (->> (zipmap ["ne" "nw" "se" "sw" "e" "w"] (range))
-       (map tile)
-       (mapv (fn [[a b]]
-              [(+ a x) (+ b y)]))))
+(defn neighbors [pos]
+  (->> ["ne" "nw" "se" "sw" "e" "w"]
+       (map (comp tile list))
+       (map #(mapv + % pos))))
 
 (defn step [blacks]
   (->> (mapcat neighbors blacks)
        (frequencies)
        (filter (fn [[t cnt]]
-                 (or (and (blacks t)
-                          (#{1 2} cnt))
-                     (#{2} cnt))))
+                 (or  (#{2} cnt)
+                      (and (blacks t)
+                           (#{1 2} cnt)))))
        (map first)
        set))
 

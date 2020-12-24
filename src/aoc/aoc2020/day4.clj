@@ -1,11 +1,11 @@
-(ns aoc2020.day4
+(ns aoc.aoc2020.day4
   (:require [clojure.string :as str]))
 
 (def fields #{"ecl" "pid" "eyr" "hcl" "byr" "iyr" "hgt"})
 
 
 (defn part-1 []
-  (let [passports (-> (slurp "data/aoc2020_day4.txt")
+  (let [passports (-> (slurp "data/aoc.aoc2020.day4.txt")
                       (str/split #"\n\n"))]
     (->> passports
          (map (fn [p]

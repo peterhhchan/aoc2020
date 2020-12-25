@@ -13,7 +13,8 @@
 (defn tiles []
   (->> (slurp "data/aoc2020_day24.txt")
        s/split-lines
-       (map #(map first (re-seq #"(se|sw|ne|nw|e|w)" %)))
+       (map #(->> (re-seq #"(se|sw|ne|nw|e|w)" %)
+                  (map first)))
        (map tile)))
 
 (defn black? [f] (odd? (second f)))

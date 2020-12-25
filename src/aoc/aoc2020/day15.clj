@@ -1,4 +1,4 @@
-(ns aoc2020.day15)
+(ns aoc.aoc2020.day15)
 
 (def input [0 3 6])
 

@@ -1,4 +1,4 @@
-(ns aoc2020.day23)
+(ns aoc.aoc2020.day23)
 
 (defn build-list [input]
   (loop [res (transient {})
